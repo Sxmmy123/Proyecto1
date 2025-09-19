@@ -7,94 +7,19 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <style>
-  body {
-    padding-bottom: 120px;
-    background: #f0f9ff;
-    font-family: 'Segoe UI', sans-serif;
-  }
-
-  h1 { 
-    font-weight: 700; 
-    color: #333; 
-    text-shadow: 1px 1px 2px #eee;
-  }
-
-  /* Footer fijo */
-  #exportarFooter {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: #e0e0e0;
-    border-top: 2px solid #ccc;
-    padding: 12px;
-    text-align: center;
-    z-index: 1000;
-  }
-  #exportarFooter button {
-    font-weight: 600;
-    transition: transform 0.2s;
-  }
+  body { padding-bottom: 120px; background: #f0f9ff; font-family: 'Segoe UI', sans-serif; }
+  h1 { font-weight: 700; color: #333; text-shadow: 1px 1px 2px #eee; }
+  #exportarFooter { position: fixed; bottom: 0; left: 0; right: 0; background-color: #e0e0e0; border-top: 2px solid #ccc; padding: 12px; text-align: center; z-index: 1000; }
+  #exportarFooter button { font-weight: 600; transition: transform 0.2s; }
   #exportarFooter button:hover { transform: scale(1.05); }
-
-  /* Cursos */
-  .card {
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-    transition: transform 0.3s, box-shadow 0.3s;
-  }
-  .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  }
-  .card-header {
-    color: #fff;
-    font-size: 1.2rem;
-    font-weight: 600;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    transition: transform 0.3s, box-shadow 0.3s;
-  }
-  .card-header.selected {
-    background-color: #fff !important;
-    color: inherit !important;
-    transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  }
-
-  /* Collapse body */
-  .collapse-body {
-    padding: 10px;
-    background: #f9f9f9;
-    border-top: 1px solid #ddd;
-    border-radius: 0 0 15px 15px;
-    animation: fadeIn 0.4s;
-  }
-
-  @keyframes fadeIn {
-    from {opacity: 0; transform: translateY(-5px);}
-    to {opacity: 1; transform: translateY(0);}
-  }
-
-  /* Botones */
-  .btn-sm {
-    transition: transform 0.2s;
-  }
-  .btn-sm:hover {
-    transform: scale(1.05);
-  }
-
-  .btn-success, .btn-primary, .btn-info {
-    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .btn-success:hover, .btn-primary:hover, .btn-info:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-  }
+  .card { border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.08); transition: transform 0.3s, box-shadow 0.3s; }
+  .card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+  .card-header { color: #fff; font-size: 1.2rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: transform 0.3s, box-shadow 0.3s; }
+  .collapse-body { padding: 10px; background: #f9f9f9; border-top: 1px solid #ddd; border-radius: 0 0 15px 15px; animation: fadeIn 0.4s; }
+  @keyframes fadeIn { from {opacity: 0; transform: translateY(-5px);} to {opacity: 1; transform: translateY(0);} }
+  .btn-sm { transition: transform 0.2s; } .btn-sm:hover { transform: scale(1.05); }
+  .btn-success, .btn-primary, .btn-info { box-shadow: 0 3px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; }
+  .btn-success:hover, .btn-primary:hover, .btn-info:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
 </style>
 </head>
 <body>
@@ -109,11 +34,11 @@
   <div id="listaCursos" class="mb-4"></div>
 
   <div class="d-grid gap-2 col-6 mx-auto mb-5">
-    <button class="btn btn-success btn-lg" onclick="agregarCurso()">➕ Agregar Cursos</button>
+    <button class="btn btn-success btn-lg" onclick="agregarCurso()">➕ Agregar Curso</button>
   </div>
 </div>
 
-<!-- Modales y footer (sin cambios) -->
+<!-- Modal Exportar -->
 <div class="modal fade" id="modalExportar" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -135,6 +60,7 @@
   </div>
 </div>
 
+<!-- Modal Agregar Alumnos en bloque -->
 <div class="modal fade" id="modalAlumnosBloque" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -143,7 +69,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <label for="textareaAlumnos" class="form-label">Pega la lista de alumnos (un alumno por línea):</label>
+        <label for="textareaAlumnos" class="form-label">Pega la lista de alumnos (uno por línea):</label>
         <textarea id="textareaAlumnos" class="form-control" rows="10" placeholder="Ejemplo:
 ALANOCA LINARES ANGEL
 CAHUANA SALLAMA JUAN ISAIAS
@@ -165,8 +91,9 @@ CESPEDES BUCHAPI NAYARA KALEXIA"></textarea>
 <script>
 let cursoExpandido = null;
 let cursoSeleccionadoBloque = null;
-const coloresCursos = ["#f28b82","#fbbc04","#34a853","#4285f4","#9c27b0","#ff9800"]; // 6 colores
+const coloresCursos = ["#f28b82","#fbbc04","#34a853","#4285f4","#9c27b0","#ff9800"];
 
+// ==================== FUNCIONES ====================
 function irAFechaActual(){
   const hoy = new Date();
   const anio = hoy.getFullYear();
@@ -188,35 +115,97 @@ function cargarCursos() {
     card.className = "card mb-3";
     const collapseId = `collapse-${idx}`;
     const cursoColor = JSON.parse(localStorage.getItem("cursoColores"))?.[curso] || "#ddd";
-    card.innerHTML = `
-      <div class="card-header d-flex justify-content-between align-items-center" 
-           style="cursor: pointer; background-color:${cursoColor};" 
-           onclick="toggleCollapse('${collapseId}','${curso}')">
-        <strong style="text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${curso}</strong>
-        <div>
-          <button class="btn btn-sm btn-light border-info me-1" style="color:#0dcaf0;" onclick="event.stopPropagation(); window.location.href='Horario.html?curso=${encodeURIComponent(curso)}'">Horario</button>
-          <button class="btn btn-sm btn-light border-primary me-1" style="color:#0d6efd;" onclick="event.stopPropagation(); editarCurso(${idx})">Editar</button>
-          <button class="btn btn-sm btn-light border-danger" style="color:#dc3545;" onclick="event.stopPropagation(); eliminarCurso(${idx})">Eliminar</button>
-        </div>
-      </div>
-      <div class="collapse-body" id="${collapseId}" style="display:none;">
-        <ul class="list-group">
-          ${(JSON.parse(localStorage.getItem("alumnos"))?.[curso] || []).map((al,i)=>`
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              ${al}
-              <div>
-                <button class="btn btn-sm btn-outline-secondary me-1" onclick="editarAlumno('${curso}',${i})">Editar</button>
-                <button class="btn btn-sm btn-outline-danger" onclick="eliminarAlumno('${curso}',${i})">Eliminar</button>
-              </div>
-            </li>`).join('')}
-        </ul>
-        <div class="mt-3 d-flex gap-2">
-          <button class="btn btn-sm btn-outline-success" onclick="agregarAlumno('${curso}')">Agregar Alumno</button>
-          <button class="btn btn-sm btn-outline-warning" onclick="abrirModalAlumnosBloque('${curso}')">Agregar Varios</button>
-        </div>
+
+    // Cabecera
+    const header = document.createElement("div");
+    header.className = "card-header d-flex justify-content-between align-items-center";
+    header.style.backgroundColor = cursoColor;
+    header.innerHTML = `<strong style="text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${curso}</strong>
+      <div>
+        <button class="btn btn-sm btn-light border-info me-1">Horario</button>
+        <button class="btn btn-sm btn-light border-primary me-1">Editar</button>
+        <button class="btn btn-sm btn-light border-danger">Eliminar</button>
       </div>`;
+
+    // Botones
+    const btnHorario = header.querySelector(".border-info");
+    const btnEditar = header.querySelector(".border-primary");
+    const btnEliminar = header.querySelector(".border-danger");
+
+    btnHorario.addEventListener("click", (e) => { 
+      e.stopPropagation(); 
+      window.location.href = `Horario.html?curso=${encodeURIComponent(curso)}`; 
+    });
+    btnEditar.addEventListener("click", (e) => { 
+      e.stopPropagation(); 
+      editarCurso(idx); 
+    });
+    btnEliminar.addEventListener("click", (e) => { 
+      e.stopPropagation(); 
+      eliminarCurso(idx); 
+    });
+
+    header.addEventListener("click", () => toggleCollapse(collapseId, curso));
+
+    // Collapse body
+    const collapseBody = document.createElement("div");
+    collapseBody.className = "collapse-body";
+    collapseBody.id = collapseId;
+    collapseBody.style.display = "none";
+
+    // Lista de alumnos
+    const alumnosCurso = JSON.parse(localStorage.getItem("alumnos"))?.[curso] || [];
+    const ul = document.createElement("ul");
+    ul.className = "list-group";
+
+    alumnosCurso.forEach((al, i) => {
+      const li = document.createElement("li");
+      li.className = "list-group-item d-flex justify-content-between align-items-center";
+      li.textContent = al;
+
+      const divBtns = document.createElement("div");
+      const btnEdit = document.createElement("button");
+      btnEdit.className = "btn btn-sm btn-outline-secondary me-1";
+      btnEdit.textContent = "Editar";
+      btnEdit.addEventListener("click", (e) => { e.stopPropagation(); editarAlumno(curso, i); });
+
+      const btnDel = document.createElement("button");
+      btnDel.className = "btn btn-sm btn-outline-danger";
+      btnDel.textContent = "Eliminar";
+      btnDel.addEventListener("click", (e) => { e.stopPropagation(); eliminarAlumno(curso, i); });
+
+      divBtns.appendChild(btnEdit);
+      divBtns.appendChild(btnDel);
+      li.appendChild(divBtns);
+      ul.appendChild(li);
+    });
+
+    collapseBody.appendChild(ul);
+
+    // Botones agregar alumno
+    const divAgregar = document.createElement("div");
+    divAgregar.className = "mt-3 d-flex gap-2";
+    const btnAgregar = document.createElement("button");
+    btnAgregar.className = "btn btn-sm btn-outline-success";
+    btnAgregar.textContent = "Agregar Alumno";
+    btnAgregar.addEventListener("click", () => agregarAlumno(curso));
+
+    const btnAgregarBloque = document.createElement("button");
+    btnAgregarBloque.className = "btn btn-sm btn-outline-warning";
+    btnAgregarBloque.textContent = "Agregar Varios";
+    btnAgregarBloque.addEventListener("click", () => abrirModalAlumnosBloque(curso));
+
+    divAgregar.appendChild(btnAgregar);
+    divAgregar.appendChild(btnAgregarBloque);
+    collapseBody.appendChild(divAgregar);
+
+    card.appendChild(header);
+    card.appendChild(collapseBody);
     contenedor.appendChild(card);
-    if(curso===cursoExpandido){setTimeout(()=>{document.getElementById(collapseId).style.display='block'},0)}
+
+    if(curso===cursoExpandido){
+      setTimeout(()=>{document.getElementById(collapseId).style.display='block'},0);
+    }
   });
 }
 
@@ -228,6 +217,7 @@ function toggleCollapse(id,curso){
   cursoExpandido=isVisible?null:curso;
 }
 
+// ====================== CURSOS - AGREGAR, EDITAR, ELIMINAR =================
 function agregarCurso(){
   const nombre=prompt("Nombre del curso:");
   if(!nombre) return;
@@ -235,11 +225,11 @@ function agregarCurso(){
   if(cursos.includes(nombre)) return alert("Ese curso ya existe.");
   cursos.push(nombre);
   localStorage.setItem("cursos",JSON.stringify(cursos));
+
   let alumnos=JSON.parse(localStorage.getItem("alumnos"))||{};
   alumnos[nombre]=[];
   localStorage.setItem("alumnos",JSON.stringify(alumnos));
 
-  // asignar color
   let cursoColores = JSON.parse(localStorage.getItem("cursoColores"))||{};
   const color = coloresCursos[cursos.length % coloresCursos.length];
   cursoColores[nombre] = color;
@@ -248,6 +238,57 @@ function agregarCurso(){
   cargarCursos();
 }
 
+function editarCurso(idx){
+  let cursos = JSON.parse(localStorage.getItem("cursos")) || [];
+  const nombreActual = cursos[idx];
+  const nuevoNombre = prompt("Nuevo nombre del curso:", nombreActual);
+  if(!nuevoNombre) return;
+
+  // Actualizar cursos
+  cursos[idx] = nuevoNombre;
+  localStorage.setItem("cursos", JSON.stringify(cursos));
+
+  // Actualizar alumnos
+  let alumnos = JSON.parse(localStorage.getItem("alumnos")) || {};
+  if(alumnos[nombreActual]){
+    alumnos[nuevoNombre] = alumnos[nombreActual];
+    delete alumnos[nombreActual];
+  }
+  localStorage.setItem("alumnos", JSON.stringify(alumnos));
+
+  // Actualizar colores
+  let cursoColores = JSON.parse(localStorage.getItem("cursoColores")) || {};
+  if(cursoColores[nombreActual]){
+    cursoColores[nuevoNombre] = cursoColores[nombreActual];
+    delete cursoColores[nombreActual];
+  }
+  localStorage.setItem("cursoColores", JSON.stringify(cursoColores));
+
+  cursoExpandido = nuevoNombre;
+  cargarCursos();
+}
+
+function eliminarCurso(idx){
+  if(!confirm("¿Eliminar este curso y todos sus alumnos?")) return;
+
+  let cursos = JSON.parse(localStorage.getItem("cursos")) || [];
+  const nombre = cursos[idx];
+  cursos.splice(idx,1);
+  localStorage.setItem("cursos", JSON.stringify(cursos));
+
+  let alumnos = JSON.parse(localStorage.getItem("alumnos")) || {};
+  delete alumnos[nombre];
+  localStorage.setItem("alumnos", JSON.stringify(alumnos));
+
+  let cursoColores = JSON.parse(localStorage.getItem("cursoColores")) || {};
+  delete cursoColores[nombre];
+  localStorage.setItem("cursoColores", JSON.stringify(cursoColores));
+
+  if(cursoExpandido === nombre) cursoExpandido = null;
+  cargarCursos();
+}
+
+// ====================== ALUMNOS =================
 function agregarAlumno(curso){
   cursoExpandido=curso;
   let alumnos=JSON.parse(localStorage.getItem("alumnos"))||{};
@@ -258,7 +299,6 @@ function agregarAlumno(curso){
   cargarCursos();
 }
 
-// ====================== Alumnos en bloque =========================
 function abrirModalAlumnosBloque(curso){
   cursoSeleccionadoBloque = curso;
   document.getElementById("textareaAlumnos").value = "";
@@ -290,8 +330,15 @@ function editarAlumno(curso,idx){
   cargarCursos();
 }
 
+function eliminarAlumno(curso,idx){
+  if(!confirm("¿Eliminar este alumno?")) return;
+  let alumnos=JSON.parse(localStorage.getItem("alumnos"))||{};
+  alumnos[curso].splice(idx,1);
+  localStorage.setItem("alumnos",JSON.stringify(alumnos));
+  cargarCursos();
+}
 
-// ====================== EXPORTACION =========================
+// ================= EXPORTAR =================
 document.addEventListener("DOMContentLoaded",()=>{
   const mesesContainer=document.getElementById("mesesContainer");
   for(let i=1;i<=12;i++){
@@ -313,98 +360,71 @@ function exportarExcel() {
   const wb = XLSX.utils.book_new();
   const anio = new Date().getFullYear();
 
-  // ================= ASISTENCIA ==================
+  // ASISTENCIA
   mesesSeleccionados.forEach(mes => {
     const diasMes = new Date(anio, mes, 0).getDate();
     const datos = [["Nombre"]];
-
-    // Encabezado con días laborables
     for (let dia = 1; dia <= diasMes; dia++) {
       const fecha = new Date(anio, mes - 1, dia);
       const diaSemana = fecha.getDay();
       datos[0].push(diaSemana === 0 || diaSemana === 6 ? "" : dia);
     }
-    // Totales
     datos[0].push("P", "F", "A", "L");
 
-    // Filas de alumnos
     (alumnos[curso] || []).forEach(nombre => {
       const fila = [nombre];
       let total = { P: 0, F: 0, A: 0, L: 0 };
-
       for (let dia = 1; dia <= diasMes; dia++) {
         const fecha = new Date(anio, mes - 1, dia);
         const diaSemana = fecha.getDay();
         const clave = `${anio}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}|${curso}|${nombre}`;
         let estado = "";
-
         if (diaSemana !== 0 && diaSemana !== 6) {
           estado = asistencias[clave] || "blanco";
           const cod = { blanco: "F", verde: "P", amarillo: "A", morado: "L" }[estado];
           fila.push(cod);
-          if (cod) total[cod]++; 
-        } else {
-          fila.push("");
-        }
+          if (cod) total[cod]++;
+        } else { fila.push(""); }
       }
-
       fila.push(total["P"], total["F"], total["A"], total["L"]);
       datos.push(fila);
     });
 
     const hoja = XLSX.utils.aoa_to_sheet(datos);
-
-    // Definir ancho de columnas
-    const totalCols = datos[0].length;
-    hoja['!cols'] = [{ wch: 25 }, ...Array(totalCols - 1).fill({ wch: 2.5 })];
-
-    // 👉 Nombre de la pestaña con el mes en letras
+    hoja['!cols'] = [{ wch: 25 }, ...Array(datos[0].length - 1).fill({ wch: 2.5 })];
     const nombreMes = new Date(anio, mes - 1).toLocaleString('es-ES', { month: 'long' });
     XLSX.utils.book_append_sheet(wb, hoja, `${curso}_${nombreMes}`);
   });
 
-  // ================= NOTAS ==================
+  // NOTAS
   if (Object.keys(notas).length) {
     const actividades = [];
-
-    // Recolectar actividades dentro del rango de meses seleccionados
     for (let mes of mesesSeleccionados) {
       const listaActividades = notas[curso]?.actividades || [];
       listaActividades.forEach(act => {
         const fecha = new Date(act.fecha);
-        if (fecha.getMonth()+1 === mes) {
-          actividades.push(act);
-        }
+        if (fecha.getMonth()+1 === mes) actividades.push(act);
       });
     }
 
     if (actividades.length) {
-      const datosNotas = [["Nombre", ...actividades.map((a,i)=> a.titulo || `Tarea ${i+1}`)]];
-
+      const datosNotas = [["Nombre", ...actividades.map((a,i)=> a.titulo || `Tarea ${i+1}`)]]; 
       (alumnos[curso] || []).forEach(nombre => {
         const fila = [nombre];
         actividades.forEach(act => {
-          const calif = act.notas?.[nombre] ?? "";
-          fila.push(calif);
+          fila.push(act.notas?.[nombre] ?? "");
         });
         datosNotas.push(fila);
       });
-
       const hojaNotas = XLSX.utils.aoa_to_sheet(datosNotas);
       hojaNotas['!cols'] = [{ wch: 25 }, ...Array(datosNotas[0].length - 1).fill({ wch: 12 })];
-
       XLSX.utils.book_append_sheet(wb, hojaNotas, "Notas");
     }
   }
 
-  // ================= GUARDAR ==================
   XLSX.writeFile(wb, `Reporte_${curso}.xlsx`);
-  const modal = bootstrap.Modal.getInstance(document.getElementById("modalExportar"));
-  modal.hide();
+  bootstrap.Modal.getInstance(document.getElementById("modalExportar")).hide();
 }
-
-// exportarExcel() se mantiene igual que tu código actual
 </script>
 </body>
 </html>
-
