@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gestión de Cursos y Tareas</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<style>
+  body {
+    padding-bottom: 120px;
+    background: #f0f9ff;
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  h1 { 
+    font-weight: 700; 
+    color: #333; 
+    text-shadow: 1px 1px 2px #eee;
+  }
+
+  /* Footer fijo */
+  #exportarFooter {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #e0e0e0;
+    border-top: 2px solid #ccc;
+    padding: 12px;
+    text-align: center;
+    z-index: 1000;
+  }
+  #exportarFooter button {
+    font-weight: 600;
+    transition: transform 0.2s;
+  }
+  #exportarFooter button:hover { transform: scale(1.05); }
+
+  /* Cursos */
+  .card {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  }
+  .card-header {
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .card-header.selected {
+    background-color: #fff !important;
+    color: inherit !important;
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+
+  /* Collapse body */
+  .collapse-body {
+    padding: 10px;
+    background: #f9f9f9;
+    border-top: 1px solid #ddd;
+    border-radius: 0 0 15px 15px;
+    animation: fadeIn 0.4s;
+  }
+
+  @keyframes fadeIn {
+    from {opacity: 0; transform: translateY(-5px);}
+    to {opacity: 1; transform: translateY(0);}
+  }
+
+  /* Botones */
+  .btn-sm {
+    transition: transform 0.2s;
+  }
+  .btn-sm:hover {
+    transform: scale(1.05);
+  }
+
+  .btn-success, .btn-primary, .btn-info {
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-success:hover, .btn-primary:hover, .btn-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  }
+</style>
+</head>
+<body>
+<div class="container py-4">
+  <h1 class="mb-4 text-center">Gestión de Cursos</h1>
+
+  <div class="d-flex justify-content-between mb-3">
+    <button class="btn btn-primary" onclick="irAFechaActual()">📋 Asistencia</button>
+    <button class="btn btn-info" onclick="window.location.href='Mes.html'">🗓️ Tareas</button>
+  </div>
+
+  <div id="listaCursos" class="mb-4"></div>
+
+  <div class="d-grid gap-2 col-6 mx-auto mb-5">
+    <button class="btn btn-success btn-lg" onclick="agregarCurso()">➕ Agregar Curso</button>
+  </div>
+</div>
+
+<!-- Modales y footer (sin cambios) -->
+<div class="modal fade" id="modalExportar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Exportar Asistencia</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label for="selectCurso" class="form-label">Curso:</label>
+        <select id="selectCurso" class="form-select mb-3"></select>
+        <label class="form-label">Meses a exportar:</label>
+        <div class="row row-cols-3" id="mesesContainer"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary" onclick="exportarExcel()">Exportar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalAlumnosBloque" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">Agregar Alumnos por cantidad</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label for="textareaAlumnos" class="form-label">Pega la lista de alumnos (un alumno por línea):</label>
+        <textarea id="textareaAlumnos" class="form-control" rows="10" placeholder="Ejemplo:
+ALANOCA LINARES ANGEL
+CAHUANA SALLAMA JUAN ISAIAS
+CESPEDES BUCHAPI NAYARA KALEXIA"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-success" onclick="guardarAlumnosBloque()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="exportarFooter">
+  <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalExportar">📊 Exportar Asistencia</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let cursoExpandido = null;
+let cursoSeleccionadoBloque = null;
+const coloresCursos = ["#f28b82","#fbbc04","#34a853","#4285f4","#9c27b0","#ff9800"]; // 6 colores
+
+function irAFechaActual(){
+  const hoy = new Date();
+  const anio = hoy.getFullYear();
+  const mes = hoy.getMonth() + 1;
+  const dia = hoy.getDate();
+  window.location.href = `dia.html?anio=${anio}&mes=${mes}&dia=${dia}`;
+}
+
+// ====================== CURSOS =========================
+function cargarCursos() {
+  const contenedor = document.getElementById("listaCursos");
+  contenedor.innerHTML = "";
+  const cursos = JSON.parse(localStorage.getItem("cursos")) || [];
+  const selectCurso = document.getElementById("selectCurso");
+  if (selectCurso) selectCurso.innerHTML = cursos.map(c => `<option>${c}</option>`).join("");
+
+  cursos.forEach((curso, idx) => {
+    const card = document.createElement("div");
+    card.className = "card mb-3";
+    const collapseId = `collapse-${idx}`;
+    const cursoColor = JSON.parse(localStorage.getItem("cursoColores"))?.[curso] || "#ddd";
+    card.innerHTML = `
+      <div class="card-header d-flex justify-content-between align-items-center" 
+           style="cursor: pointer; background-color:${cursoColor};" 
+           onclick="toggleCollapse('${collapseId}','${curso}')">
+        <strong style="text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${curso}</strong>
+        <div>
+          <button class="btn btn-sm btn-light border-info me-1" style="color:#0dcaf0;" onclick="event.stopPropagation(); window.location.href='Horario.html?curso=${encodeURIComponent(curso)}'">Horario</button>
+          <button class="btn btn-sm btn-light border-primary me-1" style="color:#0d6efd;" onclick="event.stopPropagation(); editarCurso(${idx})">Editar</button>
+          <button class="btn btn-sm btn-light border-danger" style="color:#dc3545;" onclick="event.stopPropagation(); eliminarCurso(${idx})">Eliminar</button>
+        </div>
+      </div>
+      <div class="collapse-body" id="${collapseId}" style="display:none;">
+        <ul class="list-group">
+          ${(JSON.parse(localStorage.getItem("alumnos"))?.[curso] || []).map((al,i)=>`
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              ${al}
+              <div>
+                <button class="btn btn-sm btn-outline-secondary me-1" onclick="editarAlumno('${curso}',${i})">Editar</button>
+                <button class="btn btn-sm btn-outline-danger" onclick="eliminarAlumno('${curso}',${i})">Eliminar</button>
+              </div>
+            </li>`).join('')}
+        </ul>
+        <div class="mt-3 d-flex gap-2">
+          <button class="btn btn-sm btn-outline-success" onclick="agregarAlumno('${curso}')">Agregar Alumno</button>
+          <button class="btn btn-sm btn-outline-warning" onclick="abrirModalAlumnosBloque('${curso}')">Agregar Varios</button>
+        </div>
+      </div>`;
+    contenedor.appendChild(card);
+    if(curso===cursoExpandido){setTimeout(()=>{document.getElementById(collapseId).style.display='block'},0)}
+  });
+}
+
+function toggleCollapse(id,curso){
+  const section=document.getElementById(id);
+  const isVisible=section.style.display==='block';
+  document.querySelectorAll('.collapse-body').forEach(div=>div.style.display='none');
+  section.style.display=isVisible?'none':'block';
+  cursoExpandido=isVisible?null:curso;
+}
+
+function agregarCurso(){
+  const nombre=prompt("Nombre del curso:");
+  if(!nombre) return;
+  let cursos=JSON.parse(localStorage.getItem("cursos"))||[];
+  if(cursos.includes(nombre)) return alert("Ese curso ya existe.");
+  cursos.push(nombre);
+  localStorage.setItem("cursos",JSON.stringify(cursos));
+  let alumnos=JSON.parse(localStorage.getItem("alumnos"))||{};
+  alumnos[nombre]=[];
+  localStorage.setItem("alumnos",JSON.stringify(alumnos));
+
+  // asignar color
+  let cursoColores = JSON.parse(localStorage.getItem("cursoColores"))||{};
+  const color = coloresCursos[cursos.length % coloresCursos.length];
+  cursoColores[nombre] = color;
+  localStorage.setItem("cursoColores",JSON.stringify(cursoColores));
+
+  cargarCursos();
+}
+
+function agregarAlumno(curso){
+  cursoExpandido=curso;
+  let alumnos=JSON.parse(localStorage.getItem("alumnos"))||{};
+  const nombre=prompt("Nombre del alumno:");
+  if(!nombre) return;
+  alumnos[curso].push(nombre);
+  localStorage.setItem("alumnos",JSON.stringify(alumnos));
+  cargarCursos();
+}
+
+// ====================== Alumnos en bloque =========================
+function abrirModalAlumnosBloque(curso){
+  cursoSeleccionadoBloque = curso;
+  document.getElementById("textareaAlumnos").value = "";
+  new bootstrap.Modal(document.getElementById("modalAlumnosBloque")).show();
+}
+
+function guardarAlumnosBloque(){
+  const texto = document.getElementById("textareaAlumnos").value.trim();
+  if(!texto) return alert("Pegue al menos un nombre.");
+  let lista = texto.split("\n").map(l=>l.trim()).filter(l=>l.length>0);
+
+  let alumnos = JSON.parse(localStorage.getItem("alumnos")) || {};
+  if(!alumnos[cursoSeleccionadoBloque]) alumnos[cursoSeleccionadoBloque] = [];
+  alumnos[cursoSeleccionadoBloque].push(...lista);
+  localStorage.setItem("alumnos", JSON.stringify(alumnos));
+
+  bootstrap.Modal.getInstance(document.getElementById("modalAlumnosBloque")).hide();
+  cursoExpandido = cursoSeleccionadoBloque;
+  cargarCursos();
+}
+
+function editarAlumno(curso,idx){
+  cursoExpandido=curso;
+  let alumnos=JSON.parse(localStorage.getItem("alumnos"))||{};
+  const nuevoNombre=prompt("Nuevo nombre del alumno:",alumnos[curso][idx]);
+  if(!nuevoNombre) return;
+  alumnos[curso][idx]=nuevoNombre;
+  localStorage.setItem("alumnos",JSON.stringify(alumnos));
+  cargarCursos();
+}
+
+
+// ====================== EXPORTACION =========================
+document.addEventListener("DOMContentLoaded",()=>{
+  const mesesContainer=document.getElementById("mesesContainer");
+  for(let i=1;i<=12;i++){
+    const mes=new Date(0,i-1).toLocaleString('es-ES',{month:'long'});
+    mesesContainer.innerHTML+=`<div class="form-check"><input class="form-check-input" type="checkbox" name="mes" value="${i}" id="mes${i}"/><label class="form-check-label" for="mes${i}">${mes}</label></div>`;
+  }
+  cargarCursos();
+});
+
+function exportarExcel() {
+  const curso = document.getElementById("selectCurso").value;
+  const mesesSeleccionados = [...document.querySelectorAll("input[name='mes']:checked")].map(el => parseInt(el.value));
+  if (!mesesSeleccionados.length) return alert("Selecciona al menos un mes.");
+
+  const alumnos = JSON.parse(localStorage.getItem("alumnos")) || {};
+  const asistencias = JSON.parse(localStorage.getItem("asistencias")) || {};
+  const notas = JSON.parse(localStorage.getItem("notas")) || {};
+
+  const wb = XLSX.utils.book_new();
+  const anio = new Date().getFullYear();
+
+  // ================= ASISTENCIA ==================
+  mesesSeleccionados.forEach(mes => {
+    const diasMes = new Date(anio, mes, 0).getDate();
+    const datos = [["Nombre"]];
+
+    // Encabezado con días laborables
+    for (let dia = 1; dia <= diasMes; dia++) {
+      const fecha = new Date(anio, mes - 1, dia);
+      const diaSemana = fecha.getDay();
+      datos[0].push(diaSemana === 0 || diaSemana === 6 ? "" : dia);
+    }
+    // Totales
+    datos[0].push("P", "F", "A", "L");
+
+    // Filas de alumnos
+    (alumnos[curso] || []).forEach(nombre => {
+      const fila = [nombre];
+      let total = { P: 0, F: 0, A: 0, L: 0 };
+
+      for (let dia = 1; dia <= diasMes; dia++) {
+        const fecha = new Date(anio, mes - 1, dia);
+        const diaSemana = fecha.getDay();
+        const clave = `${anio}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}|${curso}|${nombre}`;
+        let estado = "";
+
+        if (diaSemana !== 0 && diaSemana !== 6) {
+          estado = asistencias[clave] || "blanco";
+          const cod = { blanco: "F", verde: "P", amarillo: "A", morado: "L" }[estado];
+          fila.push(cod);
+          if (cod) total[cod]++; 
+        } else {
+          fila.push("");
+        }
+      }
+
+      fila.push(total["P"], total["F"], total["A"], total["L"]);
+      datos.push(fila);
+    });
+
+    const hoja = XLSX.utils.aoa_to_sheet(datos);
+
+    // Definir ancho de columnas
+    const totalCols = datos[0].length;
+    hoja['!cols'] = [{ wch: 25 }, ...Array(totalCols - 1).fill({ wch: 2.5 })];
+
+    // 👉 Nombre de la pestaña con el mes en letras
+    const nombreMes = new Date(anio, mes - 1).toLocaleString('es-ES', { month: 'long' });
+    XLSX.utils.book_append_sheet(wb, hoja, `${curso}_${nombreMes}`);
+  });
+
+  // ================= NOTAS ==================
+  if (Object.keys(notas).length) {
+    const actividades = [];
+
+    // Recolectar actividades dentro del rango de meses seleccionados
+    for (let mes of mesesSeleccionados) {
+      const listaActividades = notas[curso]?.actividades || [];
+      listaActividades.forEach(act => {
+        const fecha = new Date(act.fecha);
+        if (fecha.getMonth()+1 === mes) {
+          actividades.push(act);
+        }
+      });
+    }
+
+    if (actividades.length) {
+      const datosNotas = [["Nombre", ...actividades.map((a,i)=> a.titulo || `Tarea ${i+1}`)]];
+
+      (alumnos[curso] || []).forEach(nombre => {
+        const fila = [nombre];
+        actividades.forEach(act => {
+          const calif = act.notas?.[nombre] ?? "";
+          fila.push(calif);
+        });
+        datosNotas.push(fila);
+      });
+
+      const hojaNotas = XLSX.utils.aoa_to_sheet(datosNotas);
+      hojaNotas['!cols'] = [{ wch: 25 }, ...Array(datosNotas[0].length - 1).fill({ wch: 12 })];
+
+      XLSX.utils.book_append_sheet(wb, hojaNotas, "Notas");
+    }
+  }
+
+  // ================= GUARDAR ==================
+  XLSX.writeFile(wb, `Reporte_${curso}.xlsx`);
+  const modal = bootstrap.Modal.getInstance(document.getElementById("modalExportar"));
+  modal.hide();
+}
+
+// exportarExcel() se mantiene igual que tu código actual
+</script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario de Actividades</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<style>
+  body { background: #f0f9ff; padding: 20px; }
+  .calendar-container { background: #fff; border-radius: 15px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 4px solid transparent; transition: border-color 0.3s; }
+  .calendar-day { border:1px solid #dee2e6; min-height: 80px; border-radius:10px; padding:8px; overflow:auto; margin-bottom:4px;}
+  .dias-semana { display:grid; grid-template-columns: repeat(5,1fr); text-align:center; font-weight:bold; margin-bottom:8px;}
+  .actividad { background:#d1ecf1; color:#0c5460; font-size:0.8rem; border-radius:6px; padding:4px 6px; margin-top:6px; cursor:pointer;}
+  .curso-selector { margin-bottom:15px; }
+  .curso-btn {
+    margin:3px; 
+    border:none; 
+    padding:6px 12px; 
+    border-radius:6px; 
+    font-weight:500; 
+    cursor:pointer;
+    color:#fff;
+    transition: all 0.3s;
+  }
+  .curso-btn.selected {
+    font-weight:bold;
+    animation: pulse 1s infinite alternate;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1.05); }
+    100% { transform: scale(1.15); }
+  }
+  .hoy { border:2px solid #dc3545; font-weight:bold; color:#dc3545; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Calendario de Actividades</h2>
+    <div>
+      <a href="index.html" class="btn btn-outline-secondary me-2">← Inicio</a>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalActividad">➕ Agendar Actividad</button>
+    </div>
+  </div>
+
+  <!-- Selector de curso -->
+  <div class="curso-selector d-flex flex-wrap" id="cursoSelector"></div>
+
+  <div class="calendar-container" id="calendarContainer">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <button class="btn btn-outline-secondary btn-sm" id="prevMes">⏮</button>
+      <h4 id="tituloMes" class="mb-0"></h4>
+      <button class="btn btn-outline-secondary btn-sm" id="nextMes">⏭</button>
+    </div>
+
+    <div class="dias-semana">
+      <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div>
+    </div>
+
+    <div id="diasCalendario" class="d-grid" style="grid-template-columns: repeat(5,1fr); gap:8px;"></div>
+  </div>
+</div>
+
+<!-- Modal Agendar Actividad -->
+<div class="modal fade" id="modalActividad" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Agendar Actividad</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Materia -->
+        <div class="mb-3">
+          <label class="form-label">Seleccione Materia:</label>
+          <select id="materiaSelect" class="form-select"></select>
+        </div>
+
+        <!-- Fechas habilitadas -->
+        <div class="mb-3">
+          <label class="form-label">Día habil para entregar:</label>
+          <div id="fechasContainer"></div>
+        </div>
+
+        <!-- Detalles -->
+        <div class="mb-3">
+          <label class="form-label">Título de la actividad</label>
+          <input type="text" id="tituloActividad" class="form-control" placeholder="Ej: Ejercicio 1">
+          <label class="form-label mt-2">Nota máxima</label>
+          <input type="number" id="notaMaxima" class="form-control" min="1" placeholder="Ej: 20">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-success" id="btnGuardar">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const cursos = JSON.parse(localStorage.getItem('cursos')||"[]");
+const cursoColores = JSON.parse(localStorage.getItem('cursoColores')||"{}");
+const ACTIVIDADES_KEY = 'actividades';
+let cursoActual = null;
+let fechaCalendario = new Date();
+const calendarContainer = document.getElementById("calendarContainer");
+
+// ---------- SELECTOR DE CURSO ----------
+const cursoSelector = document.getElementById('cursoSelector');
+function renderCursos(){
+  cursoSelector.innerHTML="";
+  cursos.forEach(c=>{
+    const btn = document.createElement("button");
+    btn.className="curso-btn";
+    btn.style.background = cursoColores[c]||"#0d6efd";
+    btn.style.color = "#fff";
+    btn.textContent = c;
+    btn.onclick = ()=>{
+      cursoActual = c;
+      renderCalendario();
+      calendarContainer.style.borderColor = cursoColores[c]||"#0d6efd";
+      document.querySelectorAll(".curso-btn").forEach(b=>{
+        b.classList.remove("selected");
+        const cursoB = b.textContent;
+        b.style.background = cursoColores[cursoB]||"#0d6efd";
+        b.style.color = "#fff";
+        b.style.transform = "scale(1)";
+      });
+      btn.classList.add("selected");
+      btn.style.background = "#fff";
+      btn.style.color = cursoColores[c]||"#0d6efd";
+      btn.style.transform = "scale(1.1)";
+    };
+    cursoSelector.appendChild(btn);
+  });
+
+  if(!cursoActual && cursos.length>0){
+    cursoActual = cursos[0];
+    setTimeout(()=>{ document.querySelectorAll(".curso-btn")[0].click(); },0);
+  }
+}
+renderCursos();
+
+// ---------- ACTIVIDADES ----------
+function loadActividades(){ return JSON.parse(localStorage.getItem(ACTIVIDADES_KEY)||'[]'); }
+function saveActividad(act){
+  const arr = loadActividades();
+  arr.push(act);
+  localStorage.setItem(ACTIVIDADES_KEY, JSON.stringify(arr));
+}
+
+// ---------- CALENDARIO ----------
+const diasCalendario = document.getElementById('diasCalendario');
+const tituloMes = document.getElementById('tituloMes');
+const prevMes = document.getElementById('prevMes');
+const nextMes = document.getElementById('nextMes');
+
+function renderCalendario(){
+  diasCalendario.innerHTML="";
+  const year = fechaCalendario.getFullYear();
+  const month = fechaCalendario.getMonth();
+  tituloMes.textContent = fechaCalendario.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+
+  const primerDia = new Date(year,month,1).getDay();
+  const offset = (primerDia==0)?6:primerDia-1;
+  const diasEnMes = new Date(year,month+1,0).getDate();
+
+  for(let i=0;i<offset;i++) if(i<5) diasCalendario.innerHTML+="<div></div>";
+
+  for(let d=1; d<=diasEnMes; d++){
+    const fechaObj = new Date(year,month,d);
+    const iso = formatISO(fechaObj);
+    if(fechaObj.getDay()===0||fechaObj.getDay()===6) continue; // lunes-viernes
+
+    const inner = `<div><strong>${d}</strong></div>`;
+
+    const diaDiv = document.createElement("div");
+    diaDiv.className = "calendar-day" + ((new Date().toDateString()===fechaObj.toDateString())?" hoy":"");
+    diaDiv.dataset.fecha = iso;
+    diaDiv.innerHTML = inner;
+    diaDiv.style.cursor = "pointer";
+
+    // Evento click para abrir calificar.html
+    diaDiv.addEventListener("click", ()=>{
+      // Filtramos las actividades **del curso actualmente seleccionado** en el momento del click
+      const actividadesCurso = loadActividades().filter(a=>a.curso===cursoActual && a.fecha===iso);
+      localStorage.setItem('actividadesDiaSeleccionado', JSON.stringify({
+        curso: cursoActual,
+        fecha: iso,
+        actividades: actividadesCurso
+      }));
+      window.location.href = "Calificar.html";
+    });
+
+    // Mostrar actividades del día dentro del div (solo visual)
+    const actividadesCurso = loadActividades().filter(a=>a.curso===cursoActual && a.fecha===iso);
+    actividadesCurso.forEach(a=>{
+      const actDiv = document.createElement("div");
+      actDiv.className = "actividad";
+      actDiv.textContent = `${a.materia}: ${a.titulo} (${a.notaMaxima})`;
+      diaDiv.appendChild(actDiv);
+    });
+
+    diasCalendario.appendChild(diaDiv);
+  }
+}
+
+
+
+function formatISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+prevMes.addEventListener('click',()=>{ fechaCalendario.setMonth(fechaCalendario.getMonth()-1); renderCalendario(); });
+nextMes.addEventListener('click',()=>{ fechaCalendario.setMonth(fechaCalendario.getMonth()+1); renderCalendario(); });
+renderCalendario();
+
+// ---------- MODAL AGENDAR ACTIVIDAD ----------
+const materiaSelect = document.getElementById('materiaSelect');
+const fechasContainer = document.getElementById('fechasContainer');
+const tituloActividad = document.getElementById('tituloActividad');
+const notaMaxima = document.getElementById('notaMaxima');
+const btnGuardar = document.getElementById('btnGuardar');
+
+document.getElementById('modalActividad').addEventListener('show.bs.modal',()=>{
+  if(!cursoActual){ alert("Selecciona un curso primero"); return; }
+  materiaSelect.innerHTML="";
+  fechasContainer.innerHTML="";
+
+  const materias = JSON.parse(localStorage.getItem(`materias_${cursoActual}`))||[];
+  if(materias.length===0){
+    materiaSelect.innerHTML=`<option value="">(No hay materias en horario)</option>`;
+  } else {
+    materias.forEach(m=>{
+      const opt = document.createElement("option");
+      opt.value=m;
+      opt.textContent=m;
+      materiaSelect.appendChild(opt);
+    });
+  }
+
+  tituloActividad.value="";
+  notaMaxima.value="";
+  generarFechas();
+});
+
+materiaSelect.addEventListener('change', generarFechas);
+
+function generarFechas(){
+  fechasContainer.innerHTML="";
+  const materia = materiaSelect.value;
+  if(!materia) return;
+
+  const horarioCurso = JSON.parse(localStorage.getItem(`horario_${cursoActual}`))||[];
+  const diasSemana = ["lunes","martes","miercoles","jueves","viernes"];
+  const hoy = new Date();
+
+  const diasDisponibles = [];
+  for(let i=0;i<14;i++){
+    const fecha = new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()+i);
+    const diaSemana = fecha.getDay();
+    if(diaSemana===0||diaSemana===6) continue;
+    const diaStr = diasSemana[diaSemana-1];
+    if(horarioCurso.some(f=>f[diaStr]===materia)){
+      diasDisponibles.push(fecha);
+    }
+  }
+
+  diasDisponibles.forEach(f=>{
+    const iso = formatISO(f);
+    const id = `fecha-${iso}`;
+    const rb = document.createElement("div");
+    rb.className="form-check";
+    rb.innerHTML=`<input class="form-check-input" type="radio" name="fechaActividad" id="${id}" value="${iso}">
+                  <label class="form-check-label" for="${id}">${iso}</label>`;
+    fechasContainer.appendChild(rb);
+  });
+}
+
+// Guardar actividad
+btnGuardar.addEventListener('click',()=>{
+  const materia = materiaSelect.value;
+  const fecha = document.querySelector('input[name="fechaActividad"]:checked')?.value;
+  const titulo = tituloActividad.value.trim();
+  const nota = notaMaxima.value;
+  if(!materia || !fecha || !titulo || !nota){ alert("Completa todos los campos"); return; }
+  const arr = loadActividades();
+  arr.push({curso:cursoActual, materia, fecha, titulo, notaMaxima:Number(nota)});
+  localStorage.setItem(ACTIVIDADES_KEY, JSON.stringify(arr));
+  bootstrap.Modal.getInstance(document.getElementById('modalActividad')).hide();
+  renderCalendario();
+});
+</script>
+</body>
+</html>

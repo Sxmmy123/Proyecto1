@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calificar Actividades</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<style>
+  body { background: #f0f9ff; padding: 20px; font-family: 'Segoe UI', sans-serif; }
+  h1,h2 { color: #333; text-align: center; }
+  .actividad-card { cursor: pointer; transition: transform 0.2s; }
+  .actividad-card:hover { transform: scale(1.05); }
+  .nota-cuadro {
+    display: inline-block;
+    width: 35px; height: 35px;
+    margin: 3px;
+    border-radius: 5px;
+    background: #e0e0e0;
+    color: #333;
+    font-weight: bold;
+    text-align: center;
+    line-height: 35px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .nota-cuadro:hover { background: #cce5ff; }
+  .nota-cuadro.seleccionado { background: #007bff; color: white; }
+  .alumno-item { cursor: pointer; padding: 8px; border-bottom: 1px solid #ddd; }
+  .alumno-item:hover { background: #f0f0f0; }
+  .btn.active { color: white; }
+  .tipo-container { text-align:center; margin-bottom:15px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Calificar Actividades</h1>
+  <h2 id="cursoNombre"></h2>
+  <p class="text-center" id="fechaSeleccionada"></p>
+
+  <div class="row" id="actividadesContainer"></div>
+
+  <div class="text-center mt-4">
+    <button class="btn btn-secondary" onclick="volverMes()">← Volver al Calendario</button>
+  </div>
+</div>
+
+<!-- Modal lista de alumnos y selección Saber/Hacer -->
+<div class="modal fade" id="modalAlumnos" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTituloAlumnos">Alumnos</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="tipo-container">
+          <button class="btn btn-outline-success me-2" id="btnSaber" onclick="seleccionarTipo('Saber')">Saber</button>
+          <button class="btn btn-outline-primary" id="btnHacer" onclick="seleccionarTipo('Hacer')">Hacer</button>
+        </div>
+        <div id="alumnosContainer"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal calificación individual -->
+<div class="modal fade" id="modalNota" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTituloNota">Calificar Alumno</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center" id="notasCuadros"></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="guardarNotaAlumno()">Guardar Nota</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let curso = '';
+let fecha = '';
+let actividades = [];
+let actividadSeleccionada = null;
+let alumnoSeleccionado = '';
+let tipoSeleccionado = '';
+let notaSeleccionada = 0;
+
+let modalAlumnos = new bootstrap.Modal(document.getElementById('modalAlumnos'));
+let modalNota = new bootstrap.Modal(document.getElementById('modalNota'));
+
+function cargarDatos() {
+  const data = JSON.parse(localStorage.getItem('actividadesDiaSeleccionado') || '{}');
+  if(!data || !data.curso) {
+    alert('No se seleccionó un curso y fecha desde el calendario.');
+    volverMes();
+    return;
+  }
+  curso = data.curso;
+  fecha = data.fecha;
+  actividades = data.actividades || [];
+
+  document.getElementById('cursoNombre').textContent = curso;
+  document.getElementById('fechaSeleccionada').textContent = fecha;
+
+  renderActividades();
+}
+
+function renderActividades() {
+  const container = document.getElementById('actividadesContainer');
+  container.innerHTML = '';
+  if(actividades.length === 0) {
+    container.innerHTML = '<p class="text-center">No hay actividades programadas para este día.</p>';
+    return;
+  }
+
+  actividades.forEach((act, idx) => {
+    const col = document.createElement('div');
+    col.className = 'col-md-4 mb-3';
+
+    const card = document.createElement('div');
+    card.className = 'card actividad-card shadow';
+    card.onclick = () => seleccionarActividad(idx);
+
+    const body = document.createElement('div');
+    body.className = 'card-body text-center';
+    body.innerHTML = `<h5>${act.materia}</h5><p>${act.titulo}</p><span class="badge bg-info">Max: ${act.notaMaxima}</span>`;
+
+    card.appendChild(body);
+    col.appendChild(card);
+    container.appendChild(col);
+  });
+}
+
+function seleccionarActividad(idx) {
+  actividadSeleccionada = actividades[idx];
+  tipoSeleccionado = '';
+  document.getElementById('btnSaber').classList.remove('active');
+  document.getElementById('btnHacer').classList.remove('active');
+
+  document.getElementById('modalTituloAlumnos').textContent = 
+    `Alumnos - ${actividadSeleccionada.materia}: ${actividadSeleccionada.titulo}`;
+
+  renderAlumnos();
+  modalAlumnos.show();
+}
+
+function seleccionarTipo(tipo) {
+  tipoSeleccionado = tipo;
+  document.getElementById('btnSaber').classList.toggle('active', tipo==='Saber');
+  document.getElementById('btnHacer').classList.toggle('active', tipo==='Hacer');
+  renderAlumnos();
+}
+
+function renderAlumnos() {
+  const container = document.getElementById('alumnosContainer');
+  container.innerHTML = '';
+
+  if(!tipoSeleccionado) {
+    container.innerHTML = '<p class="text-center text-muted">Selecciona Saber o Hacer antes de calificar a los alumnos.</p>';
+    return;
+  }
+
+  const alumnos = JSON.parse(localStorage.getItem('alumnos') || '{}')[curso] || [];
+  if(alumnos.length === 0) {
+    container.innerHTML = '<p class="text-center">No hay alumnos registrados en este curso.</p>';
+    return;
+  }
+
+  const calificaciones = JSON.parse(localStorage.getItem('notas') || '{}');
+
+  alumnos.forEach(alumno => {
+    const div = document.createElement('div');
+    div.className = 'alumno-item';
+    let notaGuardada = calificaciones[curso]?.[fecha]?.[actividadSeleccionada.titulo]?.alumnos?.[alumno]?.[tipoSeleccionado] ?? 0;
+    div.textContent = `${alumno} (Nota: ${notaGuardada})`;
+    div.onclick = () => seleccionarAlumno(alumno, notaGuardada);
+    container.appendChild(div);
+  });
+}
+
+function seleccionarAlumno(nombre, notaActual) {
+  alumnoSeleccionado = nombre;
+  notaSeleccionada = notaActual;
+  document.getElementById('modalTituloNota').textContent = `Calificar: ${nombre} (${tipoSeleccionado})`;
+  renderCuadros();
+  modalNota.show();
+}
+
+function renderCuadros() {
+  const container = document.getElementById('notasCuadros');
+  container.innerHTML = '';
+  let max = actividadSeleccionada.notaMaxima;
+  for(let i=0; i<=max; i++) {
+    const div = document.createElement('div');
+    div.className = 'nota-cuadro' + (i === notaSeleccionada ? ' seleccionado' : '');
+    div.textContent = i;
+    div.onclick = () => seleccionarNota(i);
+    container.appendChild(div);
+  }
+}
+
+function seleccionarNota(valor) {
+  notaSeleccionada = valor;
+  document.querySelectorAll('.nota-cuadro').forEach(c => {
+    c.classList.remove('seleccionado');
+    if(parseInt(c.textContent) === valor) c.classList.add('seleccionado');
+  });
+}
+
+function guardarNotaAlumno() {
+  if(!tipoSeleccionado) return alert('Selecciona primero Saber o Hacer.');
+
+  let calificaciones = JSON.parse(localStorage.getItem('notas') || '{}');
+  if(!calificaciones[curso]) calificaciones[curso] = {};
+  if(!calificaciones[curso][fecha]) calificaciones[curso][fecha] = {};
+  if(!calificaciones[curso][fecha][actividadSeleccionada.titulo]) {
+    calificaciones[curso][fecha][actividadSeleccionada.titulo] = { alumnos: {} };
+  }
+  if(!calificaciones[curso][fecha][actividadSeleccionada.titulo].alumnos)
+    calificaciones[curso][fecha][actividadSeleccionada.titulo].alumnos = {};
+  if(!calificaciones[curso][fecha][actividadSeleccionada.titulo].alumnos[alumnoSeleccionado])
+    calificaciones[curso][fecha][actividadSeleccionada.titulo].alumnos[alumnoSeleccionado] = {};
+
+  calificaciones[curso][fecha][actividadSeleccionada.titulo].alumnos[alumnoSeleccionado][tipoSeleccionado] = notaSeleccionada;
+
+  localStorage.setItem('notas', JSON.stringify(calificaciones));
+  modalNota.hide();
+  renderAlumnos();
+}
+
+function volverMes() {
+  window.location.href = 'mes.html';
+}
+
+cargarDatos();
+</script>
+</body>
+</html>
